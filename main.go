@@ -107,8 +107,10 @@ func exportToCSV (db *sql.DB, tableName, fileName, filter string) error {
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 
-	writer := csv.NewWriter(file)	
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
 	
 	query := fmt.Sprintf("SELECT * FROM %s", tableName)
 	if filter != "" {
@@ -165,10 +167,6 @@ func exportToCSV (db *sql.DB, tableName, fileName, filter string) error {
 
 		writer.Write(rowRecord)
 	}
-
-	defer file.Close()
-		
-	defer writer.Flush()
 
 	return nil
 }
