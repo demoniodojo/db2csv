@@ -16,7 +16,7 @@ A lightweight, high-performance CLI tool written in Go to export MySQL/MariaDB t
 1. Ensure you have [Go](https://go.dev/doc/install) installed.
 2. Clone the repository:
    ```bash
-   git clone [https://github.com/yourusername/db2csv.git](https://github.com/yourusername/db2csv.git)
+   git clone [https://github.com/demoniodojo/db2csv.git](https://github.com/demoniodojo/db2csv.git)
    cd db2csv
    ```
 3. Build the binary:
@@ -39,17 +39,17 @@ db2csv [flags] <database.table> <output.csv>
 
 **Standard Export:**
 ```bash
-db2csv --user=root --password=mysecret my_database.users users_backup.csv
+db2csv --user root --password mysecret my_database.users users_backup.csv
 ```
 
 **Using a Filter:**
 ```bash
-db2csv --user=admin --password=pass --filter="status='active' AND created_at > '2023-01-01'" web_db.orders active_orders.csv
+db2csv --user admin --password pass --filter "status='active' AND created_at > '2023-01-01'" web_db.orders active_orders.csv
 ```
 
 **Remote Connection:**
 ```bash
-db2csv --host=192.168.1.50 --port=3307 --user=remote_user mydb.products products.csv
+db2csv --host 192.168.1.50 --port 3307 --user remote_user mydb.products products.csv
 ```
 
 ### Flags
