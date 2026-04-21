@@ -16,7 +16,7 @@ A lightweight, high-performance CLI tool written in Go to export MySQL/MariaDB t
 1. Ensure you have [Go](https://go.dev/doc/install) installed.
 2. Clone the repository:
    ```bash
-   git clone [https://github.com/demoniodojo/db2csv.git](https://github.com/demoniodojo/db2csv.git)
+   git clone https://github.com/demoniodojo/db2csv.git]
    cd db2csv
    ```
 3. Build the binary:
