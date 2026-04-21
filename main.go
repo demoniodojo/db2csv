@@ -21,12 +21,20 @@ func main () {
 	portFlag	 := flag.String("port", "3306", "Host port for connection")
 	filterFlag	 := flag.String("filter", "", "parameter for the WHERE clause")
 
+	// improve the -help on usage
+	flag.Usage = func() {
+			fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+			fmt.Println("Example: db2csv -user root -password secret mydb.mytable output.csv")
+			fmt.Println("\nAvailable Flags:")
+			flag.PrintDefaults()
+	}
+
 	// process the flags
 	flag.Parse()
 
 	// checking for all arguments
 	if len(flag.Args()) < 2 {
-		fmt.Println("Usage: db2csv [flags] <database.table> <output.csv>")
+		flag.Usage()
 		return
 	}
 
