@@ -58,6 +58,7 @@ db2csv --host 192.168.1.50 --port 3307 --user remote_user mydb.products products
 - `--host`: Database hostname (default: `127.0.0.1`).
 - `--port`: Database port (default: `3306`).
 - `--filter`: Optional SQL snippet for the `WHERE` clause.
+- `--no-header`: Optional, if used then no column names are included in the csv.
 
 ## Technical Details
 
