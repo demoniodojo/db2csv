@@ -34,6 +34,7 @@ Basic command structure:
 ```bash
 db2csv [flags] <database.table> <output.csv>
 ```
+If output.csv is omitted then table.csv is used.
 
 ### Examples
 
