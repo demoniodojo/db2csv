@@ -9,6 +9,7 @@ import (
 	"flag"		// for flags in the command
 	_ "github.com/go-sql-driver/mysql" // for mysql connection, the _ is for it to call init
 	"net/url" // for dealing with weird chars in passwords and similar
+	"log"
 )
 
 
@@ -18,13 +19,15 @@ func main () {
 	userFlag 	 := flag.String("user", "", "Database username")
 	passwordFlag := flag.String("password", "", "password for the username")
 	hostFlag	 := flag.String("host", "127.0.0.1", "Hostname of the database")
-	portFlag	 := flag.String("port", "3306", "Host port for connection")
+	portFlag	 := flag.Int("port", 3306, "Host port for connection")
 	filterFlag	 := flag.String("filter", "", "parameter for the WHERE clause")
+	noHeaderFlag := flag.Bool("no-header", false, "Skip writing the column names as the first row")
 
 	// improve the -help on usage
 	flag.Usage = func() {
 			fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
 			fmt.Println("Example: db2csv -user root -password secret mydb.mytable output.csv")
+			fmt.Println("\nIf output.csv is omitted, it defaults to tableName.csv")
 			fmt.Println("\nAvailable Flags:")
 			flag.PrintDefaults()
 	}
@@ -33,7 +36,7 @@ func main () {
 	flag.Parse()
 
 	// checking for all arguments
-	if len(flag.Args()) < 2 {
+	if len(flag.Args()) < 1 {
 		flag.Usage()
 		return
 	}
@@ -41,11 +44,15 @@ func main () {
 	// Parsing
 	databaseName, tableName, err := parseSource(flag.Arg(0))
 	if err != nil {
-		fmt.Println("Error:", err)
-		return
+		log.Fatalf("Critical Error: %v", err)
 	}
-	fileName 	 := strings.TrimSpace(flag.Arg(1))
 
+	fileName := ""
+	if len(flag.Args()) > 1 {
+		fileName = strings.TrimSpace(flag.Arg(1))
+	} else {
+		fileName = tableName + ".csv"
+	}
 
 	// Connecting
 	db, err := connectToDB(*userFlag, *passwordFlag, databaseName, *hostFlag, *portFlag)
@@ -59,9 +66,9 @@ func main () {
 
 	fmt.Printf("Working with\n Database: %s\n Table: %s\n File: %s\n", databaseName, tableName, fileName)
 
-	err = exportToCSV(db, tableName, fileName, *filterFlag)
+	err = exportToCSV(db, tableName, fileName, *filterFlag, *noHeaderFlag)
 	if err != nil {
-		fmt.Println("Error creating CSV:", err)
+		fmt.Println(err)
 		return
 	}
 	fmt.Println("File created successfully!")
@@ -85,15 +92,14 @@ func parseSource(input string) (string, string, error) {
 }
 
 // Function to connect to DB
-func connectToDB(user, password, databaseName, host, port string) (*sql.DB, error) {
+func connectToDB(user, password, databaseName, host string, port int) (*sql.DB, error) {
 	
 	// Sanitize credential
 	safeUser 		:= url.QueryEscape(user)
 	safePassword	:= url.QueryEscape(password)
 	safeHost		:= url.QueryEscape(host)
-	safePort		:= url.QueryEscape(port)
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", safeUser, safePassword, safeHost, safePort, databaseName)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", safeUser, safePassword, safeHost, port, databaseName)
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -109,11 +115,11 @@ func connectToDB(user, password, databaseName, host, port string) (*sql.DB, erro
 	return db, nil
 }
 
-func exportToCSV (db *sql.DB, tableName, fileName, filter string) error {
+func exportToCSV (db *sql.DB, tableName, fileName, filter string, noHeader bool) error {
 	
 	file, err := os.Create(fileName)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error, could not create output file [%s]: %w", fileName, err)
 	}
 	defer file.Close()
 
@@ -127,25 +133,27 @@ func exportToCSV (db *sql.DB, tableName, fileName, filter string) error {
 
 	rows, err := db.Query(query)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error with the query [%s]: %w", query, err)
 	}
 	defer rows.Close()
 
+	// discover header, column field name
 	columns, err := rows.Columns()
 	if err != nil {
-		return err
-	} 
+		return fmt.Errorf("Error, failed to get column names: %w", err)
+	}
 
-	// write headers
-	err = writer.Write(columns)
-	if err != nil {
-		return err
+	if !noHeader {
+		// write headers if not asked otherwise
+		if err = writer.Write(columns); err != nil {
+			return err
+		}
 	}
 
 	// traverse the recordset
-	values 	  := make([]interface{}, len(columns))
+	values 	  := make([]interface{}, len(columns)) // build an array for the data
 
-	valuePtrs := make([]interface{}, len(columns))
+	valuePtrs := make([]interface{}, len(columns)) // build an array for the addresses (pointers)
 
 	for i := range values {
 		valuePtrs[i] = &values[i]
@@ -176,5 +184,15 @@ func exportToCSV (db *sql.DB, tableName, fileName, filter string) error {
 		writer.Write(rowRecord)
 	}
 
+	// check if there were errors during the export
+	if err = rows.Err(); err != nil {
+        return fmt.Errorf("Error during row iteration: %w", err)
+    }
+
+	writer.Flush()
+    if err := writer.Error(); err != nil {
+        return fmt.Errorf("Error, failed to finalize CSV file: %w", err)
+    }
+	
 	return nil
 }
