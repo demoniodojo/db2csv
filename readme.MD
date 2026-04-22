@@ -71,3 +71,6 @@ db2csv --host 192.168.1.50 --port 3307 --user remote_user mydb.products products
 
 ## License
 MIT
+
+## Author
+Chris Carias
