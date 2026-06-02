@@ -2,6 +2,8 @@
 
 A lightweight, high-performance CLI tool written in Go to export MySQL/MariaDB tables directly to CSV files. Designed for speed, portability, and ease of use in Linux/WSL environments.
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/chriscarias/db2csv)
+
 ## Features
 
 - **Zero Dependencies:** Compiles to a single static binary. No need for Go, Python, or PHP runtimes on the target server.
